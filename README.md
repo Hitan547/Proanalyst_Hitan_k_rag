@@ -28,12 +28,10 @@ Provided Upwork API PDF
 Local PDF text extraction
         |
         v
-Sanity check
-characters + sample text
+Sanity check: characters + sample text
         |
         v
-500-character chunks
-50-character overlap
+500-character chunks with 50-character overlap
         |
         v
 Local MiniLM embeddings
@@ -55,33 +53,38 @@ Deterministic exact-fact guardrails
         +--> exact API fact found -> direct grounded answer
         |
         v
-DeepInfra Meta-Llama
-retrieved snippets only
+DeepInfra Meta-Llama with retrieved snippets only
         |
         v
-Streamlit UI
-answer + latency + confidence + sources
+Streamlit UI: answer + latency + confidence + sources
 ```
 
 ## Project Structure
 
 ```text
 Proanalyst/
-├── app.py                    # Streamlit UI and app flow
-├── rag_pipeline.py           # PDF loading, chunking, embeddings, Chroma retrieval
-├── llm_client.py             # DeepInfra OpenAI-compatible chat client
-├── answer_guardrails.py      # Deterministic answers for exact grounded facts
-├── config.py                 # Environment/config values
-├── evaluation.py             # Required and sheet evaluation questions
-├── requirements.txt          # Python dependencies
-├── .env.example              # Example secret configuration
-├── README.md                 # Setup and architecture
-├── technical_summary.md      # Short submission summary
-├── test_cases.md             # Evaluation results
-├── PROJECT_REPORT.md         # Detailed implementation report
-└── data/
-    └── upwork_api_docs.pdf   # Provided documentation
+app.py                    # Streamlit UI and app flow
+rag_pipeline.py           # PDF loading, chunking, embeddings, Chroma retrieval
+llm_client.py             # DeepInfra OpenAI-compatible chat client
+answer_guardrails.py      # Deterministic answers for exact grounded facts
+config.py                 # Environment/config values
+evaluation.py             # Required and sheet evaluation questions
+requirements.txt          # Python dependencies
+.env.example              # Example secret configuration
+README.md                 # Main setup and architecture documentation
+data/
+  upwork_api_docs.pdf     # Provided documentation
+docs/
+  PROJECT_REPORT.md       # Detailed implementation report
+  technical_summary.md    # Short assignment technical summary
+  test_cases.md           # Evaluation results and testing notes
 ```
+
+## Documentation
+
+- [Project Report](docs/PROJECT_REPORT.md): detailed implementation story, architecture, challenges, and solutions.
+- [Technical Summary](docs/technical_summary.md): concise assignment summary.
+- [Test Cases](docs/test_cases.md): required tests and final evaluation results.
 
 ## Quick Start
 
@@ -121,9 +124,7 @@ http://localhost:8501
 1. `rag_pipeline.py` loads the local PDF using `PyPDFLoader`.
 2. It prints the total character count and a sample of extracted text for ingestion verification.
 3. The document is split into 500-character chunks with 50-character overlap.
-4. Each chunk receives metadata:
-   - `chunk_id`
-   - `source_file`
+4. Each chunk receives metadata: `chunk_id` and `source_file`.
 5. `all-MiniLM-L6-v2` creates local embeddings.
 6. ChromaDB stores embeddings persistently in `chroma_db/`.
 7. Retrieval gets a wider candidate set, reranks using semantic and lexical signals, and returns the top 3 chunks.
@@ -143,7 +144,7 @@ ChromaDB persists embeddings locally, so after the first indexing run the app do
 The assignment required these values. The overlap helps preserve context when OAuth flows, endpoint URLs, curl examples, request parameters, or GraphQL schemas span chunk boundaries.
 
 **Why top 3 chunks?**  
-Top-3 retrieval balances evidence and noise. It provides enough context to answer most API questions without giving the model too much irrelevant text.
+Top-3 retrieval balances context and noise. It provides enough evidence to answer most API questions without giving the model too much irrelevant text.
 
 **Why deterministic guardrails?**  
 Some questions ask for exact API facts, such as grant types, GraphQL error fields, or subscription entity types. The LLM can occasionally omit an item or over-refuse even when the source contains the answer. `answer_guardrails.py` fixes this by returning exact answers only when the retrieved snippets clearly contain the required evidence.
@@ -196,7 +197,7 @@ Required assignment questions:
 
 ## Streamlit Cloud Deployment
 
-1. Push the project without `.env`, `.venv`, `__pycache__`, or `chroma_db`.
+1. Push the project without `.env`, `.venv`, `__pycache__`, `instruction_review`, generated answer files, or `chroma_db`.
 2. Create a Streamlit Cloud app with `app.py` as the entrypoint.
 3. Add secrets:
 
@@ -218,8 +219,8 @@ DEEPINFRA_MODEL = "meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo"
 - `requirements.txt`
 - `.env.example`
 - `README.md`
-- `technical_summary.md`
-- `test_cases.md`
-- `PROJECT_REPORT.md`
+- `docs/technical_summary.md`
+- `docs/test_cases.md`
+- `docs/PROJECT_REPORT.md`
 
-Do not submit `.env`, `.venv`, `chroma_db`, or `__pycache__`.
+Do not submit `.env`, `.venv`, `chroma_db`, `instruction_review`, `exact_rag_answers.*`, `sheet_eval_results.json`, or `__pycache__`.
