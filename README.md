@@ -1,23 +1,79 @@
 # Upwork API Technical Support RAG Bot
 
-A Streamlit technical-support assistant that answers questions about the provided Upwork API documentation using a local RAG pipeline. The application extracts text from the local PDF, creates local embeddings, retrieves the most relevant chunks with ChromaDB, and sends only the selected snippets to DeepInfra Meta-Llama for grounded answer generation.
+<div align="center">
 
-The system is intentionally simple, auditable, and aligned with the assignment requirements.
+**A source-grounded Streamlit RAG assistant for Upwork API documentation, built with local embeddings, persistent ChromaDB retrieval, DeepInfra Meta-Llama, and deterministic answer guardrails.**
 
-## Features
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-Streamlit%20Cloud-ff4b4b?style=for-the-badge&logo=streamlit&logoColor=white)](https://proanalysthitank-p9xvkrnqrj9ahyey5xmh3a.streamlit.app/)
+[![Python](https://img.shields.io/badge/Python-3.10-blue?style=for-the-badge&logo=python&logoColor=white)](runtime.txt)
+[![Vector DB](https://img.shields.io/badge/Vector%20DB-ChromaDB-5b61ff?style=for-the-badge)](https://www.trychroma.com/)
+[![LLM](https://img.shields.io/badge/LLM-DeepInfra%20Meta--Llama-green?style=for-the-badge)](https://deepinfra.com/)
 
-- Local PDF ingestion from `data/upwork_api_docs.pdf`
-- Sanity check with character count and sample extracted text
-- 500-character chunks with 50-character overlap
-- Local embeddings using `sentence-transformers/all-MiniLM-L6-v2`
-- Persistent ChromaDB vector store
-- Top-3 retrieval with chunk IDs and relevance scores
-- Retrieval threshold fallback to reduce hallucinations
-- Deterministic answer guardrails for exact API facts
-- DeepInfra Meta-Llama chat completion integration
-- Streamlit UI with answer, latency, confidence, and sources
-- Evaluation buttons for the required assignment test cases
-- Environment-variable based API key loading
+*Ask Upwork API questions, get answers grounded in retrieved documentation snippets, and audit every response through sources, chunk IDs, scores, latency, and confidence.*
+
+</div>
+
+---
+
+## Live Demo
+
+The deployed Streamlit app is available here:
+
+[https://proanalysthitank-p9xvkrnqrj9ahyey5xmh3a.streamlit.app/](https://proanalysthitank-p9xvkrnqrj9ahyey5xmh3a.streamlit.app/)
+
+## What This Project Does
+
+This project implements a technical support bot for the provided Upwork API documentation. It follows the assignment requirements closely while adding lightweight production-minded polish:
+
+- local PDF ingestion,
+- exact 500-character chunking with 50-character overlap,
+- local MiniLM embeddings,
+- persistent ChromaDB storage,
+- top-3 retrieval,
+- DeepInfra Meta-Llama generation,
+- source snippets,
+- latency display,
+- retrieval confidence,
+- hallucination fallback,
+- deterministic guardrails for exact API facts.
+
+The goal is not to build an unnecessarily complex agent system. The goal is to build a reliable, explainable, source-grounded RAG application that can be reviewed and defended line by line.
+
+## Evaluation Result
+
+The final system was checked against the visible evaluation-sheet questions.
+
+| Evaluation Set | Result |
+|---|---:|
+| Required assignment questions | 3 / 3 pass |
+| Visible evaluation-sheet questions | 36 / 36 matched expected meaning |
+| Negative hallucination-trap questions | Correct fallback |
+| Source traceability | Chunk IDs, snippets, and scores shown in UI |
+
+Examples of expected behavior:
+
+| Question Type | Final Behavior |
+|---|---|
+| OAuth access token TTL | Returns 24 hours and `expires_in: 86400` seconds |
+| OAuth grant types | Returns Authorization Code, Implicit, Client Credentials, Refresh Token |
+| GraphQL bad requests | Returns HTTP 200 OK with errors in response body |
+| Missing required GraphQL argument | Returns `ValidationError` / `MissingFieldArgument` |
+| Rate limit not present in docs | Returns required fallback message |
+
+## Key Capabilities
+
+| Capability | Implementation | Why It Matters |
+|---|---|---|
+| Local document ingestion | `PyPDFLoader` loads the provided PDF locally | Full document is not uploaded to the hosted LLM |
+| Required chunking | 500 characters, 50 overlap | Preserves OAuth flows, URLs, parameters, and GraphQL context |
+| Local embeddings | `sentence-transformers/all-MiniLM-L6-v2` | Fast, lightweight, no embedding API cost |
+| Persistent vector DB | ChromaDB persisted to `chroma_db/` | Avoids recomputing embeddings after restart |
+| Top-3 retrieval | Semantic retrieval plus lexical reranking | Keeps context focused and auditable |
+| Source traceability | Chunk IDs, scores, snippets | Reviewers can verify every answer |
+| Hallucination guard | Threshold + evidence checks + strict fallback | Prevents weak matches from becoming guessed answers |
+| Exact fact guardrails | `answer_guardrails.py` | Prevents LLM omissions on lists, fields, endpoints, permissions |
+| Hosted LLM | DeepInfra Meta-Llama OpenAI-compatible API | Generates concise answers from retrieved snippets only |
+| Streamlit UI | Answer, confidence, latency, sources | Simple reviewer-friendly demo |
 
 ## Architecture
 
@@ -25,13 +81,15 @@ The system is intentionally simple, auditable, and aligned with the assignment r
 Provided Upwork API PDF
         |
         v
-Local PDF text extraction
+Local PDF extraction
         |
         v
-Sanity check: characters + sample text
+Sanity check
+character count + sample text
         |
         v
-500-character chunks with 50-character overlap
+500-character chunks
+50-character overlap
         |
         v
 Local MiniLM embeddings
@@ -40,24 +98,44 @@ Local MiniLM embeddings
 Persistent ChromaDB vector store
         |
         v
-Top-3 semantic retrieval
+Semantic retrieval + lexical reranking
+        |
+        v
+Top 3 source chunks
         |
         v
 Retrieval threshold + evidence checks
         |
-        +--> weak evidence -> required fallback message
+        +--> weak evidence -> required fallback
         |
         v
 Deterministic exact-fact guardrails
         |
-        +--> exact API fact found -> direct grounded answer
+        +--> exact source-supported fact -> direct answer
         |
         v
-DeepInfra Meta-Llama with retrieved snippets only
+DeepInfra Meta-Llama
+retrieved snippets only
         |
         v
-Streamlit UI: answer + latency + confidence + sources
+Streamlit UI
+answer + latency + confidence + sources
 ```
+
+## RAG Pipeline
+
+1. Load `data/upwork_api_docs.pdf` locally.
+2. Print total character count and sample extracted text.
+3. Split into 500-character chunks with 50-character overlap.
+4. Add metadata: `chunk_id` and `source_file`.
+5. Embed chunks locally with `all-MiniLM-L6-v2`.
+6. Store vectors in persistent ChromaDB.
+7. Retrieve a wider candidate set and rerank with semantic and lexical signals.
+8. Return the top 3 chunks to the app.
+9. Apply retrieval threshold and evidence checks.
+10. Apply deterministic guardrails for exact API facts.
+11. If no direct guardrail answer exists, call DeepInfra Meta-Llama with retrieved snippets only.
+12. Display answer, latency, confidence, source snippets, chunk IDs, and scores.
 
 ## Project Structure
 
@@ -66,45 +144,41 @@ Proanalyst/
 app.py                    # Streamlit UI and app flow
 rag_pipeline.py           # PDF loading, chunking, embeddings, Chroma retrieval
 llm_client.py             # DeepInfra OpenAI-compatible chat client
-answer_guardrails.py      # Deterministic answers for exact grounded facts
-config.py                 # Environment/config values
+answer_guardrails.py      # Deterministic source-grounded exact answers
+config.py                 # Environment variables and constants
 evaluation.py             # Required and sheet evaluation questions
 requirements.txt          # Python dependencies
+runtime.txt               # Streamlit Cloud Python version
 .env.example              # Example secret configuration
-README.md                 # Main setup and architecture documentation
+README.md                 # Main project documentation
 data/
-  upwork_api_docs.pdf     # Provided documentation
+  upwork_api_docs.pdf     # Provided Upwork API documentation
 docs/
   PROJECT_REPORT.md       # Detailed implementation report
-  technical_summary.md    # Short assignment technical summary
-  test_cases.md           # Evaluation results and testing notes
+  technical_summary.md    # Assignment technical summary
+  test_cases.md           # Evaluation and test results
 ```
 
 ## Documentation
 
-- [Project Report](docs/PROJECT_REPORT.md): detailed implementation story, architecture, challenges, and solutions.
-- [Technical Summary](docs/technical_summary.md): concise assignment summary.
-- [Test Cases](docs/test_cases.md): required tests and final evaluation results.
+- [Project Report](docs/PROJECT_REPORT.md): detailed implementation story, architecture, challenges, fixes, and interview talking points.
+- [Technical Summary](docs/technical_summary.md): concise assignment-ready technical summary.
+- [Test Cases](docs/test_cases.md): required tests, expected behavior, and final evaluation results.
 
 ## Quick Start
 
-1. Install dependencies:
-
 ```bash
+git clone https://github.com/Hitan547/Proanalyst_Hitan_k.git
+cd Proanalyst_Hitan_k
 pip install -r requirements.txt
+streamlit run app.py
 ```
 
-2. Create `.env` from `.env.example`:
+Create a local `.env` file:
 
 ```env
 DEEPINFRA_API_KEY=your_deepinfra_key_here
 DEEPINFRA_MODEL=meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo
-```
-
-3. Run the app:
-
-```bash
-streamlit run app.py
 ```
 
 Windows virtual environment command used during development:
@@ -113,102 +187,59 @@ Windows virtual environment command used during development:
 .\.venv\Scripts\streamlit.exe run app.py
 ```
 
-4. Open:
+Open:
 
 ```text
 http://localhost:8501
 ```
 
-## How The RAG Pipeline Works
-
-1. `rag_pipeline.py` loads the local PDF using `PyPDFLoader`.
-2. It prints the total character count and a sample of extracted text for ingestion verification.
-3. The document is split into 500-character chunks with 50-character overlap.
-4. Each chunk receives metadata: `chunk_id` and `source_file`.
-5. `all-MiniLM-L6-v2` creates local embeddings.
-6. ChromaDB stores embeddings persistently in `chroma_db/`.
-7. Retrieval gets a wider candidate set, reranks using semantic and lexical signals, and returns the top 3 chunks.
-8. The app checks retrieval strength and required evidence before calling the LLM.
-9. Exact API/list questions are answered by deterministic guardrails when the retrieved sources clearly contain the fact.
-10. Otherwise, DeepInfra Meta-Llama generates an answer using only retrieved snippets.
-
-## Design Decisions
-
-**Why ChromaDB?**  
-ChromaDB persists embeddings locally, so after the first indexing run the app does not need to recompute embeddings on every restart. This improves startup time and makes the app more production-minded than rebuilding vectors every run.
-
-**Why MiniLM?**  
-`sentence-transformers/all-MiniLM-L6-v2` runs locally, is lightweight, avoids embedding API cost, and performs well for semantic retrieval over technical documentation.
-
-**Why 500 characters and 50 overlap?**  
-The assignment required these values. The overlap helps preserve context when OAuth flows, endpoint URLs, curl examples, request parameters, or GraphQL schemas span chunk boundaries.
-
-**Why top 3 chunks?**  
-Top-3 retrieval balances context and noise. It provides enough evidence to answer most API questions without giving the model too much irrelevant text.
-
-**Why deterministic guardrails?**  
-Some questions ask for exact API facts, such as grant types, GraphQL error fields, or subscription entity types. The LLM can occasionally omit an item or over-refuse even when the source contains the answer. `answer_guardrails.py` fixes this by returning exact answers only when the retrieved snippets clearly contain the required evidence.
-
-**Why retrieval threshold?**  
-Even unrelated questions retrieve something from a vector database. The threshold and evidence checks prevent weak matches from becoming hallucinated answers.
-
-## Prompting And Safety
-
-The LLM receives:
-
-- only retrieved snippets,
-- no full document upload,
-- no API keys,
-- no chunk scores,
-- no hidden answer key.
-
-The system prompt instructs the model to answer only from snippets and use the required fallback:
-
-```text
-I'm sorry, but the provided documentation does not contain that information.
-```
-
-## Evaluation
-
-The system was checked against 36 visible evaluation-sheet questions.
-
-Result after retrieval tuning and guardrails:
-
-```text
-Matches expected meaning: 36 / 36
-Unresolved issues: 0
-```
-
-Required assignment questions:
-
-| Question | Expected Behavior | Result |
-|---|---|---|
-| Specific request-per-second rate limit/per-key/per-IP | Fallback because not present in docs | Pass |
-| OAuth access token validity | 24 hours / 86400 seconds | Pass |
-| Client Credentials for user's private contract details | Conservative fallback unless clearly supported | Pass |
-
-## Security Notes
-
-- Do not commit `.env`.
-- Use Streamlit secrets for deployment.
-- Keep API keys out of screenshots and documentation.
-- Only `.env.example` should be submitted.
-- The full source PDF is processed locally; only retrieved snippets are sent to DeepInfra.
-
 ## Streamlit Cloud Deployment
 
-1. Push the project without `.env`, `.venv`, `__pycache__`, `instruction_review`, generated answer files, or `chroma_db`.
-2. Create a Streamlit Cloud app with `app.py` as the entrypoint.
-3. Add secrets:
+This repo includes `runtime.txt`:
+
+```text
+python-3.10
+```
+
+This is important because newer Python versions can force some dependencies to build from source on Streamlit Cloud.
+
+Add secrets in Streamlit Cloud:
 
 ```toml
 DEEPINFRA_API_KEY = "your_key_here"
 DEEPINFRA_MODEL = "meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo"
 ```
 
-4. Test the evaluation questions and verify sources.
+Do not commit `.env` or any real API key.
+
+## Design Decisions
+
+**Why ChromaDB instead of FAISS?**  
+ChromaDB persists embeddings locally, so the app can restart without rebuilding all vectors. This improves startup time and makes the system more production-minded.
+
+**Why MiniLM?**  
+`all-MiniLM-L6-v2` is lightweight, local, fast, and suitable for semantic retrieval over focused technical documentation.
+
+**Why top 3 chunks?**  
+Top-3 retrieval provides enough context for most answers while limiting noise and token usage.
+
+**Why deterministic guardrails?**  
+For exact API facts, LLMs can be slightly inconsistent. The guardrails return exact source-supported facts for endpoints, permissions, grant types, GraphQL fields, subscription entities, token TTLs, and fallback cases.
+
+**Why not add agents or memory?**  
+The assignment asked for a focused RAG bot. I intentionally avoided extra agent frameworks, memory, and unrelated complexity so the solution stays simple, auditable, and easy to evaluate.
+
+## Security
+
+- API keys are loaded from `.env` locally or Streamlit secrets in deployment.
+- `.env` is ignored by Git.
+- The full PDF is processed locally.
+- Only the top retrieved snippets are sent to the hosted LLM.
+- Chunk scores and IDs are shown in the UI but not sent as hidden answer keys.
 
 ## Submission Checklist
+
+Included:
 
 - `app.py`
 - `rag_pipeline.py`
@@ -217,10 +248,24 @@ DEEPINFRA_MODEL = "meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo"
 - `config.py`
 - `evaluation.py`
 - `requirements.txt`
+- `runtime.txt`
 - `.env.example`
 - `README.md`
+- `docs/PROJECT_REPORT.md`
 - `docs/technical_summary.md`
 - `docs/test_cases.md`
-- `docs/PROJECT_REPORT.md`
+- `data/upwork_api_docs.pdf`
 
-Do not submit `.env`, `.venv`, `chroma_db`, `instruction_review`, `exact_rag_answers.*`, `sheet_eval_results.json`, or `__pycache__`.
+Excluded:
+
+- `.env`
+- `.venv/`
+- `chroma_db/`
+- `instruction_review/`
+- `exact_rag_answers.*`
+- `sheet_eval_results.json`
+- `__pycache__/`
+
+## Interview Summary
+
+> I built a Streamlit RAG bot over the provided Upwork API documentation. It extracts the PDF locally, chunks it into 500-character chunks with 50 overlap, embeds locally with MiniLM, persists vectors in ChromaDB, retrieves the top 3 chunks, applies grounding checks and exact-fact guardrails, then sends only retrieved snippets to DeepInfra Meta-Llama. The UI shows answer status, latency, confidence, source snippets, chunk IDs, and scores so every response is auditable.
