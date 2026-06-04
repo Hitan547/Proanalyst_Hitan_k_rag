@@ -1,0 +1,10 @@
+.env
+__pycache__/
+*.py[cod]
+.streamlit/
+chroma_db/
+.venv/
+venv/
+instruction_review/
+exact_rag_answers.*
+sheet_eval_results.json
