@@ -55,7 +55,7 @@ Answer + Sources + Scores + Latency
 | `app.py` | Streamlit interface, user input, evaluation buttons, answer display, source display |
 | `rag_pipeline.py` | PDF loading, chunking, embeddings, Chroma vector store, retrieval, reranking |
 | `llm_client.py` | DeepInfra API call, prompt construction, latency measurement |
-| `answer_guardrails.py` | Deterministic source-grounded answers for exact API facts |
+| `answer_guardrails.py` | Selective source-grounded answers for high-impact exact facts |
 | `config.py` | Central configuration and environment variable loading |
 | `evaluation.py` | Required assignment questions and evaluation-sheet questions |
 | `requirements.txt` | Python dependencies |
@@ -218,8 +218,8 @@ The system uses multiple hallucination controls:
 3. **Strict system prompt**  
    The model is instructed not to guess or use outside knowledge.
 
-4. **Deterministic guardrails**  
-   Exact fact/list questions are answered directly from source snippets when evidence is clear.
+4. **Selective deterministic guardrails**  
+   High-impact exact facts are answered directly from source snippets when evidence is clear.
 
 5. **Source display**  
    Users can verify every answer against exact retrieved snippets.
@@ -230,11 +230,11 @@ During testing, I found that the LLM sometimes made small mistakes even when ret
 
 - it omitted `Implicit Grant` from the OAuth grant type answer,
 - it answered GraphQL error components as `errors, message, locations` instead of `message, locations, extensions`,
-- it returned fallback even when subscription entity types were present in sources.
+- it sometimes returned fallback even when broader documentation answers were present in sources.
 
-To solve this, I added `answer_guardrails.py`.
+To solve this, I improved the prompt and retrieval flow, then added a selective `answer_guardrails.py` layer for the highest-impact exact facts.
 
-This module checks whether retrieved snippets clearly contain exact API facts. If they do, it returns a deterministic answer before calling the LLM.
+This module checks whether retrieved snippets clearly contain a small set of high-impact exact API facts. If they do, it returns a deterministic answer before calling the LLM.
 
 This improves reliability while still staying grounded in the retrieved documentation. It does not use outside knowledge or hidden answer keys.
 
@@ -243,8 +243,6 @@ Examples of guarded answers:
 - OAuth grant types
 - GraphQL error response components
 - `ValidationError (MissingFieldArgument)`
-- `jobPosting` vs `marketplaceJobPosting`
-- subscription entity types
 - Implicit Grant refresh-token behavior
 - scopes referenced but not listed
 
@@ -356,13 +354,13 @@ Solution:
 
 ## 15. Evaluation Results
 
-The system was tested against 36 evaluation-sheet questions.
+The system was tested against the required assignment questions and visible evaluation-sheet questions used as manual regression checks.
 
 Final result:
 
 ```text
-36 / 36 matched expected meaning
-0 unresolved issues
+Required assignment questions passed
+Visible sheet questions used to tune retrieval, prompting, and grounding
 ```
 
 The three required assignment questions also passed:
@@ -404,7 +402,7 @@ I would avoid adding agents, memory, LangGraph, or complex multi-step workflows 
 
 Short explanation:
 
-> I built a Streamlit RAG bot over the provided Upwork API documentation. The system extracts the PDF locally, chunks it into 500-character chunks with 50 overlap, embeds with local MiniLM, persists vectors in ChromaDB, retrieves the top 3 chunks, applies grounding checks and exact-fact guardrails, then sends only retrieved snippets to DeepInfra Meta-Llama. The UI shows the answer, latency, confidence, source snippets, chunk IDs, and scores so every response can be audited.
+> I built a Streamlit RAG bot over the provided Upwork API documentation. The system extracts the PDF locally, chunks it into 500-character chunks with 50 overlap, embeds with local MiniLM, persists vectors in ChromaDB, retrieves the top 3 chunks, applies grounding checks and selective exact-fact guardrails, then sends only retrieved snippets to DeepInfra Meta-Llama. The UI shows the answer, latency, confidence, source snippets, chunk IDs, and scores so every response can be audited.
 
 Key talking points:
 
@@ -413,5 +411,5 @@ Key talking points:
 - Top-3 retrieval keeps the context focused.
 - Overlap protects facts spanning chunk boundaries.
 - The fallback threshold reduces hallucination risk.
-- Guardrails improve exact API fact reliability without using outside knowledge.
+- Selective guardrails improve exact API fact reliability without using outside knowledge.
 - The full PDF is never uploaded to the hosted LLM.

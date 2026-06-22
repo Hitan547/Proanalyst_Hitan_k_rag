@@ -1,4 +1,4 @@
-"""Deterministic answer extraction for exact documentation facts."""
+"""Selective deterministic extraction for high-impact documentation facts."""
 
 from __future__ import annotations
 
@@ -80,23 +80,6 @@ def direct_answer(question: str, source_texts: list[str]) -> str | None:
             f"to obtain an access token ({refs})."
         )
 
-    if "tenantid" in q and "missing" in q and "default organization" in joined:
-        refs = _source_refs(source_texts, ("default organization",))
-        return f"When the header is missing, the request uses the user's default organization ({refs})."
-
-    if (
-        ("tenantid" in q or "organization execution context" in q)
-        and "header" in q
-        and "missing" not in q
-        and "x-upwork-api-tenantid" in joined
-    ):
-        refs = _any_source_refs(source_texts, ("x-upwork-api-tenantid",))
-        return f"The header is `X-Upwork-API-TenantId` ({refs})."
-
-    if "value for x-upwork-api-tenantid" in q and "companyselector" in joined:
-        refs = _any_source_refs(source_texts, ("companyselector", "company selector"))
-        return f"Get the `X-Upwork-API-TenantId` value using the `companySelector` query ({refs})."
-
     if "authorization code token request" in q and all(
         term in joined for term in ("grant_type", "client_id", "client_secret", "code", "redirect_uri")
     ):
@@ -126,91 +109,6 @@ def direct_answer(question: str, source_texts: list[str]) -> str | None:
     if "5xx" in q and "graphql  layer itself" in joined:
         refs = _source_refs(source_texts, ("graphql  layer itself",))
         return f"Upwork returns 5XX when the failure occurs at the GraphQL layer itself ({refs})."
-
-    if "right oauth scopes" in q and "status code 200" in joined:
-        refs = _source_refs(source_texts, ("status code 200",))
-        return f"You get HTTP 200 OK, with the error details in the response body ({refs})."
-
-    if "permission" in q and "job posting by id" in q and "job postings - read-only access" in joined:
-        refs = _source_refs(source_texts, ("job postings - read-only access",))
-        return f"The required permission is `Job Postings - Read-Only Access` ({refs})."
-
-    if "single job posting" in q and "jobpostingid" in joined:
-        refs = _source_refs(source_texts, ("jobpostingid",))
-        return f"Use `jobPosting(jobPostingId: ID!)` to fetch a single job posting ({refs})."
-
-    if "jobposting and marketplacejobposting" in q and (
-        "job postings - read-only access" in joined
-        and "read marketplace job postings" in joined
-    ):
-        return (
-            "They use different required permissions and response schemas: "
-            "jobPosting uses Job Postings - Read-Only Access and returns a JobPosting, "
-            "while marketplaceJobPosting uses Read marketplace Job Postings and returns "
-            "a MarketplaceJobPosting (retrieved sources)."
-        )
-
-    if "marketplacejobpostings still recommended" in q and "deprecated" in joined:
-        refs = _source_refs(source_texts, ("deprecated",))
-        return f"No. `marketplaceJobPostings` is deprecated; use `marketplaceJobPostingsSearch` instead ({refs})."
-
-    if "multiple ids" in q and "marketplacejobpostingscontents" in joined:
-        refs = _source_refs(source_texts, ("marketplacejobpostingscontents",))
-        return f"Use `marketplaceJobPostingsContents(ids: [ID!]!)` to fetch job posting content for multiple IDs ({refs})."
-
-    if "create subscriptions" in q and "available only to clients" in joined:
-        refs = _source_refs(source_texts, ("available only to clients",))
-        return f"Clients only can create subscriptions on the Upwork API ({refs})."
-
-    if "subscription is created" in q and "review state" in joined:
-        refs = _source_refs(source_texts, ("review state",))
-        return f"After creation, the subscription remains in REVIEW state until approved by the Upwork team ({refs})."
-
-    if "subscription event payload" in q and all(term in joined for term in ("entity", "action", "id")):
-        refs = _any_source_refs(source_texts, ("entity", "action", "id"))
-        return f"A subscription event payload contains `entity`, `action`, and `id` ({refs})."
-
-    if "entity types" in q and "subscribe" in q and all(
-        term in joined for term in ("job postings (jp)", "offer", "milestone", "contract feedback")
-    ):
-        refs = _source_refs(source_texts, ("job postings (jp)", "offer"))
-        return (
-            "The supported subscription entity types are JP, OFFER, Vendor JA, "
-            f"Client JA, MILESTONE, and CFB ({refs})."
-        )
-
-    if "actions" in q and "job postings" in q and all(
-        term in joined for term in ("new", "upda", "close")
-    ):
-        refs = _any_source_refs(source_texts, ("new marketplace job posting", "close marketplace job posting"))
-        return f"For job postings, the supported subscription actions are `NEW`, `UPDATE`, and `CLOSE` ({refs})."
-
-    if "list of countries" in q and "common functionality" in joined and "read and w" in joined:
-        refs = _source_refs(source_texts, ("common functionality",))
-        return f"The required permission is `Common Functionality - Read And Write Access` ({refs})."
-
-    if "languages query" in q and all(term in joined for term in ("iso639code", "active", "englishname")):
-        refs = _source_refs(source_texts, ("iso639code", "active", "englishname"))
-        return f"The languages query returns `iso639Code`, `active`, and `englishName` ({refs})."
-
-    if "reasons query" in q and "declining invitation" in joined:
-        refs = _source_refs(source_texts, ("declining invitation",))
-        return (
-            "The reasons query fetches reasons for actions like declining invitations, "
-            f"ending contracts, and withdrawing offers ({refs})."
-        )
-
-    if "service accounts perform write" in q and "must not use service accounts to perform write operations" in joined:
-        refs = _source_refs(source_texts, ("must not use service accounts to perform write operations",))
-        return f"No. Service accounts should only be used to fetch/read information, not perform write operations ({refs})."
-
-    if "assign permissions" in q and "members & permissions" in joined:
-        refs = _source_refs(source_texts, ("members & permissions",))
-        return f"Assign permissions via `Settings > Members & Permissions` in the Upwork dashboard ({refs})."
-
-    if "service accounts available" in q and "available only for enterprise accounts" in joined:
-        refs = _source_refs(source_texts, ("available only for enterprise accounts",))
-        return f"No. Service accounts are available only for enterprise accounts ({refs})."
 
     if "implicit grant" in q and "refresh token" in q and "implicit grant" in joined:
         refs = _source_refs(source_texts, ("implicit grant",))

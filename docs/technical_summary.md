@@ -6,11 +6,11 @@ The 500-character chunk size and 50-character overlap were used exactly as requi
 
 I selected ChromaDB because it persists embeddings locally. After the first indexing run, the app can restart without recomputing embeddings, improving startup time and developer experience. I used MiniLM because it is lightweight, local, cost-free for embeddings, and strong enough for semantic search over API documentation.
 
-During testing, I found that retrieval alone was not always enough for exact API facts. The vector store could retrieve relevant chunks, but the LLM sometimes omitted one list item or returned fallback even when the source contained the answer. I solved this with deterministic answer guardrails for exact source-supported facts, such as OAuth grant types, GraphQL error fields, subscription entities, and Implicit Grant refresh-token behavior. These guardrails only fire when retrieved snippets clearly contain the evidence, so the system remains grounded in the provided documentation.
+During testing, I found that retrieval alone was not always enough for high-impact exact API facts. The vector store could retrieve relevant chunks, but the LLM sometimes omitted one list item or returned fallback even when the source contained the answer. I solved this with selective deterministic guardrails for exact source-supported facts, such as OAuth token validity, OAuth grant types, OAuth endpoints, GraphQL error fields, and Implicit Grant refresh-token behavior. These guardrails only fire when retrieved snippets clearly contain the evidence, so the system remains grounded in the provided documentation. Broader documentation questions still use the normal RAG flow.
 
-The app includes hallucination protection through a retrieval threshold, evidence checks, a strict prompt, deterministic fact guardrails, and visible source snippets. The UI shows answer status, latency, retrieval confidence, source count, exact snippets, chunk IDs, and scores, making every answer auditable.
+The app includes hallucination protection through a retrieval threshold, evidence checks, a strict prompt, selective exact-fact guardrails, and visible source snippets. The UI shows answer status, latency, retrieval confidence, source count, exact snippets, chunk IDs, and scores, making every answer auditable.
 
-The final system was tested against the required assignment questions and the visible evaluation-sheet questions. After retrieval tuning and guardrails, all 36 evaluation answers matched the expected meaning while remaining grounded in retrieved source snippets.
+The final system was tested against the required assignment questions and representative visible evaluation-sheet questions. The required assignment cases pass, and the broader sheet was used as a manual regression set to tune retrieval, prompting, and source-grounding behavior.
 
 ## Use Of AI Assistance
 

@@ -12,7 +12,7 @@ These tests verify that the Streamlit RAG bot answers only from the provided Upw
 
 ## Evaluation Sheet Result
 
-The app was also checked against 36 visible evaluation-sheet questions covering:
+The app was also checked against visible evaluation-sheet questions covering:
 
 - Authentication and OAuth2
 - GraphQL error handling
@@ -22,11 +22,11 @@ The app was also checked against 36 visible evaluation-sheet questions covering:
 - service accounts
 - negative hallucination-trap questions
 
-Final result after retrieval tuning and deterministic guardrails:
+Final review after retrieval tuning and selective guardrails:
 
 ```text
-Matched expected meaning: 36 / 36
-Unresolved issues: 0
+Required assignment questions: pass
+Visible sheet questions: used for manual regression checks
 ```
 
 ## Notable Correct Behaviors
@@ -39,8 +39,8 @@ Unresolved issues: 0
 | GraphQL bad requests | HTTP 200 with errors in body | Correct |
 | GraphQL error fields | message, locations, extensions | Correct |
 | Missing required argument | ValidationError / MissingFieldArgument | Correct |
-| Deprecated endpoint | `marketplaceJobPostings` deprecated; use `marketplaceJobPostingsSearch` | Correct |
-| Subscription entities | JP, OFFER, Vendor JA, Client JA, MILESTONE, CFB | Correct |
+| Deprecated endpoint | `marketplaceJobPostings` deprecated; use `marketplaceJobPostingsSearch` | Handled by normal RAG retrieval |
+| Subscription entities | JP, OFFER, Vendor JA, Client JA, MILESTONE, CFB | Handled by normal RAG retrieval |
 | Negative rate-limit question | Fallback | Correct |
 | Negative freelancer-search question | Fallback | Correct |
 | Negative enterprise-price question | Fallback | Correct |
@@ -72,4 +72,4 @@ The UI supports reviewer verification by showing:
 
 - PDF extraction contains formatting artifacts such as broken words and copied navigation text.
 - Chroma retrieval is semantic, so unrelated questions can still retrieve weakly related chunks.
-- The app mitigates this with retrieval thresholds, evidence checks, and deterministic guardrails.
+- The app mitigates this with retrieval thresholds, evidence checks, prompt constraints, and selective exact-fact guardrails.

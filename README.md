@@ -2,7 +2,7 @@
 
 <div align="center">
 
-**A source-grounded Streamlit RAG assistant for Upwork API documentation, built with local embeddings, persistent ChromaDB retrieval, DeepInfra Meta-Llama, and deterministic answer guardrails.**
+**A source-grounded Streamlit RAG assistant for Upwork API documentation, built with local embeddings, persistent ChromaDB retrieval, DeepInfra Meta-Llama, and selective exact-fact guardrails.**
 
 [![Live Demo](https://img.shields.io/badge/Live%20Demo-Streamlit%20Cloud-ff4b4b?style=for-the-badge&logo=streamlit&logoColor=white)](https://proanalysthitank-p9xvkrnqrj9ahyey5xmh3a.streamlit.app/)
 [![Python](https://img.shields.io/badge/Python-3.10-blue?style=for-the-badge&logo=python&logoColor=white)](runtime.txt)
@@ -35,18 +35,18 @@ This project implements a technical support bot for the provided Upwork API docu
 - latency display,
 - retrieval confidence,
 - hallucination fallback,
-- deterministic guardrails for exact API facts.
+- selective guardrails for high-impact exact API facts.
 
 The goal is not to build an unnecessarily complex agent system. The goal is to build a reliable, explainable, source-grounded RAG application that can be reviewed and defended line by line.
 
 ## Evaluation Result
 
-The final system was checked against the visible evaluation-sheet questions.
+The final system was checked against the required assignment questions and representative visible evaluation-sheet questions.
 
 | Evaluation Set | Result |
 |---|---:|
 | Required assignment questions | 3 / 3 pass |
-| Visible evaluation-sheet questions | 36 / 36 matched expected meaning |
+| Visible evaluation-sheet questions | Used for manual regression checks |
 | Negative hallucination-trap questions | Correct fallback |
 | Source traceability | Chunk IDs, snippets, and scores shown in UI |
 
@@ -71,7 +71,7 @@ Examples of expected behavior:
 | Top-3 retrieval | Semantic retrieval plus lexical reranking | Keeps context focused and auditable |
 | Source traceability | Chunk IDs, scores, snippets | Reviewers can verify every answer |
 | Hallucination guard | Threshold + evidence checks + strict fallback | Prevents weak matches from becoming guessed answers |
-| Exact fact guardrails | `answer_guardrails.py` | Prevents LLM omissions on lists, fields, endpoints, permissions |
+| Selective exact-fact guardrails | `answer_guardrails.py` | Prevents LLM omissions on high-impact OAuth and GraphQL facts |
 | Hosted LLM | DeepInfra Meta-Llama OpenAI-compatible API | Generates concise answers from retrieved snippets only |
 | Streamlit UI | Answer, confidence, latency, sources | Simple reviewer-friendly demo |
 
@@ -109,7 +109,7 @@ Retrieval threshold + evidence checks
         +--> weak evidence -> required fallback
         |
         v
-Deterministic exact-fact guardrails
+Selective exact-fact guardrails
         |
         +--> exact source-supported fact -> direct answer
         |
@@ -133,7 +133,7 @@ answer + latency + confidence + sources
 7. Retrieve a wider candidate set and rerank with semantic and lexical signals.
 8. Return the top 3 chunks to the app.
 9. Apply retrieval threshold and evidence checks.
-10. Apply deterministic guardrails for exact API facts.
+10. Apply selective guardrails for high-impact exact API facts.
 11. If no direct guardrail answer exists, call DeepInfra Meta-Llama with retrieved snippets only.
 12. Display answer, latency, confidence, source snippets, chunk IDs, and scores.
 
@@ -223,8 +223,8 @@ ChromaDB persists embeddings locally, so the app can restart without rebuilding 
 **Why top 3 chunks?**  
 Top-3 retrieval provides enough context for most answers while limiting noise and token usage.
 
-**Why deterministic guardrails?**  
-For exact API facts, LLMs can be slightly inconsistent. The guardrails return exact source-supported facts for endpoints, permissions, grant types, GraphQL fields, subscription entities, token TTLs, and fallback cases.
+**Why selective guardrails?**  
+For high-impact exact facts, LLMs can be slightly inconsistent. The guardrails return source-supported answers for cases such as token TTLs, OAuth grant types, OAuth endpoints, GraphQL error fields, and documented gaps such as missing scope names.
 
 **Why not add agents or memory?**  
 The assignment asked for a focused RAG bot. I intentionally avoided extra agent frameworks, memory, and unrelated complexity so the solution stays simple, auditable, and easy to evaluate.
@@ -268,4 +268,4 @@ Excluded:
 
 ## Interview Summary
 
-> I built a Streamlit RAG bot over the provided Upwork API documentation. It extracts the PDF locally, chunks it into 500-character chunks with 50 overlap, embeds locally with MiniLM, persists vectors in ChromaDB, retrieves the top 3 chunks, applies grounding checks and exact-fact guardrails, then sends only retrieved snippets to DeepInfra Meta-Llama. The UI shows answer status, latency, confidence, source snippets, chunk IDs, and scores so every response is auditable.
+> I built a Streamlit RAG bot over the provided Upwork API documentation. It extracts the PDF locally, chunks it into 500-character chunks with 50 overlap, embeds locally with MiniLM, persists vectors in ChromaDB, retrieves the top 3 chunks, applies grounding checks and selective exact-fact guardrails, then sends only retrieved snippets to DeepInfra Meta-Llama. The UI shows answer status, latency, confidence, source snippets, chunk IDs, and scores so every response is auditable.
